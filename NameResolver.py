@@ -80,6 +80,22 @@ def int_to_type(record_type):
     print("Not a record type we care about. Defaulting to NS")
     return "NS"
 
+# Cache that stores all searched for domains, their ip/server as well as what type of question was given
+cache = []
+
+# loops through the cache and searches for the specific domain and string 
+def check_cache(domain:str, type:str):
+  # return 0 if cache is empty
+  if(len(cache) == 0):
+    return(0)
+  
+  for x in cache:
+    if(x[0] == domain and x[2] == type):
+      return(x[1])
+  
+  # return 0 if cache does not contain the domain
+  return(0)
+
 def iterate(udp_socket):
   user = ""
   rec_type = "NS"
