@@ -35,6 +35,7 @@ def get_dns_record(udp_socket, domain:str, parent_server: str, record_type):
     print("Query failed")
     return
 
+  # add checking for NS, A, AAAA, and CNAME answers specifically
   # Parse the question section #2
   for k in range(header.q):
     q = DNSQuestion.parse(buff)
@@ -65,19 +66,14 @@ def get_dns_record(udp_socket, domain:str, parent_server: str, record_type):
 def int_to_type(record_type):
   print(record_type, type(record_type))
   if(record_type == 1):
-    print("A type")
     return "A"
   elif(record_type == 2):
-    print("NS type")
     return "NS"
   elif(record_type == 5):
-    print("CNAME type")
     return "CNAME"
   elif(record_type == 28):
-    print("AAAA TYPE")
     return "AAAA"
   else:
-    print("Not a record type we care about. Defaulting to NS")
     return "NS"
 
 # Cache that stores all searched for domains, their ip/server as well as what type of question was given
