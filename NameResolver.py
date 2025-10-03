@@ -110,20 +110,27 @@ def iterate(udp_socket):
       # User commands
       # Print a list 
       if(user == ".list"):
+        if(len(cache) == 0):
+          print("Cache is empty")
         for x in range(len(cache)):
           print(x+1, ":", cache[x])
-          break
+        break
 
       # Clear the cache
       if(user == ".clear"):
+        if(len(cache) == 0):
+          print("Cache is empty")
         cache.clear()
         break
 
       command = user.split(" ")
       # Remove specific index of cache
       if(command[0] == ".remove"):
+        if(len(cache) == 0):
+          print("Cache is empty")
+          break
         # print error message if no index is given
-        if(command[1] == None):
+        if(len(command) == 1):
           print("Include what index you want to remove.")
           break
         command[1] = int(command[1])
