@@ -84,14 +84,14 @@ def int_to_type(record_type):
 cache = []
 
 # loops through the cache and searches for the specific domain and string 
-def check_cache(domain:str, type:str):
+def check_cache(domain:str):
   # return 0 if cache is empty
   if(len(cache) == 0):
     return(0)
   
   for x in cache:
-    if(x[0] == domain and x[2] == type):
-      return(x[1])
+    if(x[0] == domain):
+      return([x[1],x[2]])
   
   # return 0 if cache does not contain the domain
   return(0)
@@ -100,6 +100,8 @@ def iterate(udp_socket):
   user = ""
   rec_type = "NS"
   server = ROOT_SERVER
+  cached = False
+  exists = True
 
   print("Enter the URL you want to search for: ")
   user = input()
@@ -113,7 +115,36 @@ def iterate(udp_socket):
       temp = ""
       rec_type = "NS"
 
+      # Check cache going backwards from the whole URL to just the low level domain
       for x in range(len(URL)):
+        if(x == 0):
+          temp = user
+        else:
+          temp = ".".join(URL[x:])
+        
+        ls = check_cache(temp)
+        
+        if(ls == 0):
+          continue
+
+        rec_type = ls[1]
+        server = ls[0]
+      
+        print("Got", server, "from cache for the domain", temp)
+        cached = True
+        break
+        
+        
+      # Need to add a line to add to the cache before looping again
+      for x in range(len(URL)):
+
+        # break out of for loop if the A type IP was got from the cache
+        if(cached and (rec_type == "A" or rec_type == "CNAME")):
+          break
+        # continue through loop if not at the correct cached iteration
+        if(cached and (".".join(URL[len(URL)-x-1:]) != temp)):
+          continue
+
         # search for record type A when getting to the last server
         # also set the temp variable to be the user input for efficiency
         # if just starting, define temp as the very end of the URL
@@ -127,27 +158,44 @@ def iterate(udp_socket):
           temp = URL[len(URL)-x-1] + "." + temp
 
         ls = get_dns_record(udp_socket, temp, server, rec_type)
+        
+        # end iteration
+        if(ls == 0):
+          print("This URL does not exist")
+          exists = False
+          break
+
         rec_type = ls[0] # set rec_type to the returned record type
         server = str(ls[1]) # set server to the returned server
-
         rec_type = int_to_type(rec_type)
+
+        cache.append(tuple(temp, server, rec_type))
                 
-            # check the record type is CNAME and NS or not
-            # if NS, while loop until type A record or CNAME is found
-            # if CNAME, change user and URL then continue
-            # else, we can break out of the while loop and return the IP address
-      if(rec_type == "NS"):
+      # check the record type is CNAME and NS or not
+      # if NS, while loop until type A record or CNAME is found
+      # if CNAME, change user and URL then continue
+      # else, we can break out of the while loop and return the IP address
+      # also if we couldn't find the server earlier then we just break out
+      if(rec_type == "NS" and exists):
         while(rec_type == "NS"):
           rec_type = "A"
           ls = get_dns_record(udp_socket, temp, server, rec_type)
+
+          if(ls == 0):
+            print("This URL does not exist")
+            exists = False
+            break
           rec_type = ls[0]
           server = str(ls[1])
           rec_type = int_to_type(rec_type)
-      if(rec_type == "CNAME"):
+          cache.append(tuple(temp, server, rec_type))
+      if(rec_type == "CNAME" and exists):
         user = server
         continue
-      else:
+      elif(exists):
         print("IP is",server)
+        break
+      else:
         break
         
         # Ask for the next URL from the user
